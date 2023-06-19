@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:1.17
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/default.conf:/etc/nginx/default.conf
+      - ./html:/var/www/html
+      - ./certbot/data:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    depends_on:
+      - php
+      - certbot
+    networks:
+      - app-network
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: php
+    volumes:
+      - ./html:/var/www/html
+    networks:
+      - app-network
+
+#  mysql:
+#    image: mysql:5.7
+#    container_name: mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#      MYSQL_DATABASE: ${MYSQL_DATABASE}
+#      MYSQL_USER: ${MYSQL_USER}
+#      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#    ports:
+#      - ${MYSQL_IP}:3306:3306
+#    volumes:
+#      - ./mysql_data:/var/lib/mysql
+#    networks:
+#      - app-network
+
+#  adminer:
+#    image: adminer:latest
+#    container_name: adminer
+#    environment:
+#      ADMINER_DEFAULT_SERVER: mysql
+#      ADMINER_DEFAULT_USER: ${MYSQL_USER}
+#      ADMINER_DEFAULT_PASSWORD: ${MYSQL_PASSWORD}
+#    depends_on:
+#      - mysql
+#    networks:
+#      - app-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/data:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+# test cert
+#    command: certonly --webroot --webroot-path=/var/www/certbot --email ${EMAIL_ADDRESS} --agree-tos --no-eff-email --staging -d ${DOMAIN}
+    command: certonly --webroot --webroot-path=/var/www/certbot --email ${EMAIL_ADDRESS} --agree-tos --no-eff-email --force-renewal -d ${DOMAIN}
+#    command: certonly --webroot --webroot-path=/var/www/certbot --email ${EMAIL_ADDRESS} --agree-tos --no-eff-email --force-renewal -d ${OLD_DOMAIN}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+#volumes:
+#  mysql_data:
